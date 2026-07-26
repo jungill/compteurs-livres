@@ -55,7 +55,7 @@
     text-transform:uppercase;
   }
   .brand .mark{font-family:var(--mono);font-size:15px;color:var(--brass)}
-  .tools{display:flex;flex-wrap:wrap;gap:8px}
+  .tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 
   .btn{
     font-family:inherit;
@@ -69,12 +69,53 @@
     cursor:pointer;
   }
   .btn:hover{border-color:var(--chit);background:rgba(233,227,212,.06)}
+  .btn:disabled{opacity:.4;cursor:default}
+  .btn:disabled:hover{border-color:rgba(233,227,212,.28);background:transparent}
   .btn-primary{background:var(--brass);border-color:var(--brass);color:var(--ink);font-weight:600}
   .btn-primary:hover{background:#E2B848;border-color:#E2B848}
   .btn-quiet{border-color:transparent;color:var(--ink-soft)}
   .btn-quiet:hover{color:var(--chit);border-color:rgba(233,227,212,.28)}
 
+  .search{
+    font-family:inherit;
+    font-size:13px;
+    color:var(--chit);
+    background:rgba(233,227,212,.06);
+    border:1px solid rgba(233,227,212,.28);
+    border-radius:2px;
+    padding:8px 11px;
+    width:190px;
+    max-width:100%;
+    min-width:0;
+  }
+  .search::placeholder{color:var(--ink-soft)}
+  .search:focus{outline:none;border-color:var(--brass);background:rgba(233,227,212,.1)}
+
   :focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+
+  /* ---------- état de synchronisation ---------- */
+  .sync{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    font-size:12px;
+    letter-spacing:.02em;
+    color:var(--ink-soft);
+    background:transparent;
+    border:1px solid transparent;
+    border-radius:2px;
+    padding:7px 10px;
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .sync:hover{border-color:rgba(233,227,212,.28);color:var(--chit)}
+  .sync .dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+  .sync.is-clean{color:var(--jade)}
+  .sync.is-dirty{color:var(--brass)}
+  .sync.is-error{color:var(--danger)}
+  .sync.is-busy .dot{animation:pulse 1s infinite ease-in-out}
+  @keyframes pulse{50%{opacity:.25}}
+  @media (prefers-reduced-motion:reduce){.sync.is-busy .dot{animation:none}}
 
   /* ---------- plateau ---------- */
   .board{
@@ -85,7 +126,9 @@
     align-content:start;
     padding:22px;
   }
-  .board:empty{display:none}
+  .board:empty,.board[hidden]{display:none}
+
+  .chit[hidden]{display:none}
 
   .chit{
     position:relative;
@@ -109,21 +152,28 @@
 
   .label{
     font-family:inherit;
-    font-size:11px;
+    font-size:12px;
     font-weight:600;
-    letter-spacing:.1em;
+    letter-spacing:.07em;
     text-transform:uppercase;
     text-align:center;
-    color:var(--ink-soft);
+    text-overflow:ellipsis;
+    color:var(--ink);
     background:transparent;
     border:0;
-    border-bottom:1px solid transparent;
-    padding:9px 8px;
-    margin:0 8px;
-    width:calc(100% - 16px);
+    border-bottom:1px dashed var(--chit-edge);
+    padding:9px 4px 7px;
+    margin:0 10px;
+    width:calc(100% - 20px);
   }
-  .label:hover{border-bottom-color:var(--chit-edge)}
-  .label:focus{color:var(--ink);border-bottom-color:var(--brass);outline:none}
+  .label::placeholder{
+    color:var(--ink-soft);
+    font-weight:400;
+    letter-spacing:.02em;
+    text-transform:none;
+  }
+  .label:hover{border-bottom-color:var(--ink-soft)}
+  .label:focus{border-bottom:1px solid var(--brass);outline:none}
 
   /* ---------- les deux pistes de comptage ---------- */
   .tracks{margin-top:auto;background:var(--ink)}
@@ -201,7 +251,7 @@
   .chit:hover .remove,.chit:focus-within .remove{opacity:1}
   .remove:hover{color:#fff;background:var(--danger);border-color:var(--danger)}
 
-  /* ---------- écran vide ---------- */
+  /* ---------- écrans vides ---------- */
   .empty{
     flex:1;
     margin:22px;
@@ -249,10 +299,54 @@
   }
   .veil[hidden]{display:none}
 
+  /* ---------- réglages ---------- */
+  dialog{
+    width:min(430px,calc(100vw - 32px));
+    color:var(--chit);
+    background:#1D3036;
+    border:1px solid rgba(233,227,212,.22);
+    border-radius:4px;
+    padding:24px;
+  }
+  dialog::backdrop{background:rgba(10,18,20,.72)}
+  dialog h2{
+    margin:0 0 6px;
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+  }
+  dialog p{margin:0 0 18px;font-size:12.5px;line-height:1.65;color:var(--ink-soft)}
+  dialog p a{color:var(--brass)}
+  .field{display:block;margin-bottom:13px}
+  .field span{
+    display:block;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+  }
+  .field input{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--chit);
+    background:rgba(10,18,20,.45);
+    border:1px solid rgba(233,227,212,.22);
+    border-radius:2px;
+    padding:9px 10px;
+    width:100%;
+  }
+  .field input:focus{outline:none;border-color:var(--brass)}
+  .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+  .row .grow{margin-right:auto}
+
   @media (max-width:520px){
     .board{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:14px}
     .track{grid-template-columns:40px 1fr 40px}
     .count{font-size:24px}
+    .search{width:100%}
   }
 </style>
 </head>
@@ -261,8 +355,12 @@
 <header class="bar">
   <div class="brand"><span class="mark">&#9672;</span><h1>Compteurs de plateau</h1></div>
   <div class="tools">
+    <input type="search" class="search" id="search" placeholder="Filtrer par titre" aria-label="Filtrer les images par titre">
     <button class="btn btn-primary" id="add">Ajouter des images</button>
-    <button class="btn" id="zero">Tout remettre à zéro</button>
+    <button class="btn" id="publish">Publier</button>
+    <button class="btn" id="pull">Récupérer</button>
+    <button class="sync" id="status" type="button"><span class="dot"></span><span id="statusText">Synchro</span></button>
+    <button class="btn btn-quiet" id="zero">Remettre à zéro</button>
     <button class="btn btn-quiet" id="export">Exporter</button>
     <button class="btn btn-quiet" id="import">Importer</button>
   </div>
@@ -274,11 +372,30 @@
   <p><strong>Le plateau est vide</strong>Dépose ici les images de tes ressources et de tes unités, ou utilise le bouton « Ajouter des images ». Chaque image reçoit deux compteurs, Dubail et Oratoire.</p>
 </section>
 
+<section class="empty" id="noresult" hidden>
+  <p><strong>Aucun titre ne correspond</strong>Essaie un autre mot, ou efface le filtre pour retrouver tout le plateau.</p>
+</section>
+
 <footer class="hint">
-  Clique sur un nombre pour le saisir directement, ou utilise <code>&uarr;</code> <code>&darr;</code> · Maintiens <code>Maj</code> en cliquant sur <code>&minus;</code> ou <code>+</code> pour avancer de 5 · Le titre sous chaque image est modifiable.
+  Clique sur le titre sous une image pour le renommer · Clique sur un nombre pour le saisir directement, ou utilise <code>&uarr;</code> <code>&darr;</code> · Maintiens <code>Maj</code> en cliquant sur <code>&minus;</code> ou <code>+</code> pour avancer de 5.
 </footer>
 
 <div class="veil" id="veil" hidden>Dépose les images</div>
+
+<dialog id="settings">
+  <h2>Synchronisation</h2>
+  <p>Le plateau est publié dans un fichier <code>plateau.json</code> de ton dépôt GitHub. La lecture est libre&nbsp;; publier demande un jeton d'accès, à créer dans <em>Settings &rsaquo; Developer settings &rsaquo; Personal access tokens &rsaquo; Fine-grained</em>, limité à ce seul dépôt, avec la permission <em>Contents&nbsp;: Read and write</em>.</p>
+  <label class="field"><span>Propriétaire</span><input id="cfgOwner" placeholder="jungill" autocomplete="off" spellcheck="false"></label>
+  <label class="field"><span>Dépôt</span><input id="cfgRepo" placeholder="compteurs-plateau" autocomplete="off" spellcheck="false"></label>
+  <label class="field"><span>Branche</span><input id="cfgBranch" placeholder="main" autocomplete="off" spellcheck="false"></label>
+  <label class="field"><span>Jeton d'accès</span><input id="cfgToken" type="password" placeholder="github_pat_…" autocomplete="off" spellcheck="false"></label>
+  <p>Le jeton reste sur cet appareil et n'est jamais écrit dans le fichier publié. À saisir une fois par appareil.</p>
+  <div class="row">
+    <button class="btn btn-quiet grow" id="cfgForget">Oublier le jeton</button>
+    <button class="btn" id="cfgCancel">Annuler</button>
+    <button class="btn btn-primary" id="cfgSave">Enregistrer</button>
+  </div>
+</dialog>
 
 <input type="file" id="picker" accept="image/*" multiple hidden>
 <input type="file" id="jsonPicker" accept=".json,application/json" hidden>
@@ -295,27 +412,44 @@
   ];
 
   var KEY = "compteurs-plateau-v1";
-  var MAX_SIDE = 320;          // les images sont réduites : plateau léger et sauvegarde compacte
+  var CFG_KEY = "compteurs-sync-v1";
+  var FILE = "plateau.json";
+  var MAX_SIDE = 320;          // les images sont réduites : plateau léger et fichier compact
+
   var board = document.getElementById("board");
   var empty = document.getElementById("empty");
-  var veil  = document.getElementById("veil");
+  var noresult = document.getElementById("noresult");
+  var search = document.getElementById("search");
+  var veil = document.getElementById("veil");
   var picker = document.getElementById("picker");
   var jsonPicker = document.getElementById("jsonPicker");
+  var settings = document.getElementById("settings");
+  var statusBtn = document.getElementById("status");
+  var statusText = document.getElementById("statusText");
+  var publishBtn = document.getElementById("publish");
+  var pullBtn = document.getElementById("pull");
 
-  /* Stockage : localStorage si disponible, sinon mémoire de session. */
-  var store = (function(){
+  /* ---------- stockage local ---------- */
+
+  function makeStore(key){
     try {
-      localStorage.setItem("__test__","1");
+      localStorage.setItem("__test__", "1");
       localStorage.removeItem("__test__");
       return {
-        get: function(){ return localStorage.getItem(KEY); },
-        set: function(v){ localStorage.setItem(KEY, v); }
+        get: function(){ return localStorage.getItem(key); },
+        set: function(v){ localStorage.setItem(key, v); }
       };
     } catch (e) {
       var mem = null;
-      return { get:function(){ return mem; }, set:function(v){ mem = v; } };
+      return { get: function(){ return mem; }, set: function(v){ mem = v; } };
     }
-  })();
+  }
+  var store = makeStore(KEY);
+  var cfgStore = makeStore(CFG_KEY);
+
+  function uid(){
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
 
   /* Remet une tuile au format attendu, y compris les plateaux
      enregistrés quand il n'y avait qu'un seul compteur. */
@@ -330,22 +464,225 @@
     };
   }
 
-  var tiles = [];
-  try {
-    var parsed = JSON.parse(store.get());
-    if (Array.isArray(parsed)) tiles = parsed.map(normalize).filter(Boolean);
-  } catch (e) { tiles = []; }
+  /* Accepte aussi bien l'ancien format (tableau nu) que le nouveau. */
+  function readBoard(raw){
+    var data = typeof raw === "string" ? JSON.parse(raw) : raw;
+    var list = Array.isArray(data) ? data : (data && data.tiles);
+    if (!Array.isArray(list)) return null;
+    return {
+      savedAt: (data && data.savedAt) || 0,
+      tiles: list.map(normalize).filter(Boolean)
+    };
+  }
 
-  function save(){
+  var state = { savedAt: 0, tiles: [] };
+  var publishedAt = 0;
+
+  try {
+    var local = JSON.parse(store.get());
+    var loaded = readBoard(local);
+    if (loaded) {
+      state = loaded;
+      publishedAt = local.publishedAt || 0;
+    }
+  } catch (e) { /* premier lancement */ }
+
+  function persist(){
     try {
-      store.set(JSON.stringify(tiles));
+      store.set(JSON.stringify({
+        savedAt: state.savedAt,
+        publishedAt: publishedAt,
+        tiles: state.tiles
+      }));
     } catch (e) {
-      alert("La sauvegarde automatique a atteint sa limite. Utilise « Exporter » pour conserver ce plateau dans un fichier.");
+      alert("La sauvegarde locale a atteint sa limite. Publie le plateau ou utilise « Exporter » pour ne rien perdre.");
     }
   }
 
-  function uid(){
-    return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  /* Toute modification datée : c'est ce qui départage les appareils. */
+  function save(){
+    state.savedAt = Date.now();
+    persist();
+    updateStatus();
+  }
+
+  /* ---------- configuration de la synchronisation ---------- */
+
+  function detectRepo(){
+    var m = /^([^.]+)\.github\.io$/.exec(location.hostname);
+    if (!m) return {};
+    var parts = location.pathname.split("/").filter(Boolean);
+    return { owner: m[1], repo: parts.length ? parts[0] : m[1] + ".github.io" };
+  }
+
+  var cfg = {};
+  try { cfg = JSON.parse(cfgStore.get()) || {}; } catch (e) { cfg = {}; }
+  var guess = detectRepo();
+  cfg.owner = cfg.owner || guess.owner || "";
+  cfg.repo = cfg.repo || guess.repo || "";
+  cfg.branch = cfg.branch || "main";
+  cfg.token = cfg.token || "";
+
+  function saveCfg(){ cfgStore.set(JSON.stringify(cfg)); }
+  function canRead(){ return location.protocol !== "file:" && !!(cfg.owner && cfg.repo); }
+  function canWrite(){ return canRead() && !!cfg.token; }
+
+  /* ---------- état affiché ---------- */
+
+  var busy = false;
+  var problem = "";
+
+  function updateStatus(){
+    var dirty = state.savedAt > publishedAt;
+    statusBtn.className = "sync";
+    publishBtn.disabled = busy || !canWrite();
+    pullBtn.disabled = busy || !canRead();
+
+    if (location.protocol === "file:") {
+      statusText.textContent = "Fichier local, hors synchro";
+    } else if (!cfg.owner || !cfg.repo) {
+      statusText.textContent = "Synchro à configurer";
+    } else if (busy) {
+      statusBtn.className = "sync is-busy";
+      statusText.textContent = "En cours…";
+    } else if (problem) {
+      statusBtn.className = "sync is-error";
+      statusText.textContent = problem;
+    } else if (dirty) {
+      statusBtn.className = "sync is-dirty";
+      statusText.textContent = canWrite() ? "Non publié" : "Non publié, jeton manquant";
+    } else {
+      statusBtn.className = "sync is-clean";
+      statusText.textContent = state.tiles.length ? "À jour" : "Synchro prête";
+    }
+    statusBtn.title = cfg.owner ? cfg.owner + "/" + cfg.repo + " · " + cfg.branch + " · " + FILE : "";
+  }
+
+  /* ---------- appels GitHub ---------- */
+
+  function apiUrl(){
+    return "https://api.github.com/repos/" + encodeURIComponent(cfg.owner) +
+           "/" + encodeURIComponent(cfg.repo) + "/contents/" + FILE;
+  }
+
+  function headers(){
+    var h = { "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
+    if (cfg.token) h["Authorization"] = "Bearer " + cfg.token;
+    return h;
+  }
+
+  function toBase64(text){
+    var bytes = new TextEncoder().encode(text);
+    var binary = "";
+    for (var i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(binary);
+  }
+
+  function fromBase64(b64){
+    var binary = atob(b64.replace(/\s/g, ""));
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+
+  /* Renvoie { board, sha } ou null si rien n'est encore publié. */
+  function fetchRemote(){
+    if (cfg.token) {
+      return fetch(apiUrl() + "?ref=" + encodeURIComponent(cfg.branch), {
+        headers: headers(), cache: "no-store"
+      }).then(function(r){
+        if (r.status === 404) return null;
+        if (r.status === 401 || r.status === 403) throw new Error("Jeton refusé");
+        if (!r.ok) throw new Error("GitHub " + r.status);
+        return r.json().then(function(j){
+          return { board: readBoard(fromBase64(j.content)), sha: j.sha };
+        });
+      });
+    }
+    // Sans jeton : lecture directe du fichier publié à côté de la page.
+    return fetch(FILE + "?t=" + Date.now(), { cache: "no-store" }).then(function(r){
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error("Lecture " + r.status);
+      return r.text().then(function(t){ return { board: readBoard(t), sha: null }; });
+    });
+  }
+
+  function pull(manual){
+    if (!canRead()) return Promise.resolve();
+    busy = true; problem = ""; updateStatus();
+
+    return fetchRemote().then(function(remote){
+      busy = false;
+      if (!remote || !remote.board) {
+        if (manual) alert("Aucun plateau n'est encore publié dans le dépôt.");
+        updateStatus();
+        return;
+      }
+      var incoming = remote.board;
+      if (incoming.savedAt > state.savedAt) {
+        state = incoming;
+        publishedAt = incoming.savedAt;
+        persist();
+        render();
+      } else if (incoming.savedAt === state.savedAt) {
+        publishedAt = state.savedAt;
+        persist();
+      } else if (manual) {
+        alert("Le plateau de cet appareil est plus récent que celui du dépôt. Utilise « Publier » pour l'envoyer.");
+      }
+      updateStatus();
+    }, function(err){
+      busy = false;
+      problem = err.message || "Lecture impossible";
+      updateStatus();
+      if (manual) alert("Récupération impossible : " + problem);
+    });
+  }
+
+  function push(){
+    if (!canWrite()) { settings.showModal(); return; }
+    busy = true; problem = ""; updateStatus();
+
+    var payload = JSON.stringify({ version: 2, savedAt: state.savedAt, tiles: state.tiles });
+    if (payload.length > 900000) {
+      busy = false; updateStatus();
+      alert("Le plateau dépasse 900 Ko et deviendrait lourd à publier. Retire quelques images avant de recommencer.");
+      return;
+    }
+
+    fetchRemote().then(function(remote){
+      if (remote && remote.board && remote.board.savedAt > publishedAt) {
+        if (!confirm("Le dépôt contient une version plus récente, publiée depuis un autre appareil. La remplacer par le plateau de cet appareil ?")) {
+          busy = false; updateStatus();
+          return null;
+        }
+      }
+      var body = {
+        message: "Plateau mis à jour",
+        content: toBase64(payload),
+        branch: cfg.branch
+      };
+      if (remote && remote.sha) body.sha = remote.sha;
+
+      return fetch(apiUrl(), {
+        method: "PUT", headers: headers(), body: JSON.stringify(body)
+      }).then(function(r){
+        if (r.status === 401 || r.status === 403) throw new Error("Jeton refusé");
+        if (r.status === 409) throw new Error("Conflit, réessaie");
+        if (!r.ok) throw new Error("GitHub " + r.status);
+        busy = false;
+        publishedAt = state.savedAt;
+        persist();
+        updateStatus();
+      });
+    }).catch(function(err){
+      busy = false;
+      problem = err.message || "Publication impossible";
+      updateStatus();
+      alert("Publication impossible : " + problem);
+    });
   }
 
   /* ---------- import des images ---------- */
@@ -399,7 +736,7 @@
       if (ok.length < files.length) {
         alert((files.length - ok.length) + " image(s) n'ont pas pu être lues.");
       }
-      ok.forEach(function(t){ tiles.push(t); });
+      ok.forEach(function(t){ state.tiles.push(t); });
       save();
       render();
     });
@@ -482,6 +819,7 @@
   function makeChit(tile){
     var chit = document.createElement("article");
     chit.className = "chit";
+    chit.tile = tile;
 
     var art = document.createElement("div");
     art.className = "art";
@@ -494,9 +832,9 @@
     var label = document.createElement("input");
     label.className = "label";
     label.value = tile.label || "";
-    label.placeholder = "Sans nom";
+    label.placeholder = "Sans titre";
     label.maxLength = 24;
-    label.setAttribute("aria-label", "Nom de cet élément");
+    label.setAttribute("aria-label", "Titre de cet élément");
     label.addEventListener("input", function(){
       tile.label = label.value;
       img.alt = label.value;
@@ -514,7 +852,7 @@
     remove.setAttribute("aria-label", "Retirer " + (tile.label || "cet élément") + " du plateau");
     remove.addEventListener("click", function(){
       if (!confirm("Retirer « " + (tile.label || "cet élément") + " » du plateau ?")) return;
-      tiles = tiles.filter(function(t){ return t.id !== tile.id; });
+      state.tiles = state.tiles.filter(function(t){ return t.id !== tile.id; });
       save();
       render();
     });
@@ -526,11 +864,39 @@
     return chit;
   }
 
+  /* Comparaison insensible à la casse et aux accents : « oratoire » trouve « Oratoire ». */
+  function fold(text){
+    return (text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  }
+
+  var query = "";
+
+  function applyFilter(){
+    var visible = 0;
+    Array.prototype.forEach.call(board.children, function(chit){
+      var match = !query || fold(chit.tile.label).indexOf(query) !== -1;
+      chit.hidden = !match;
+      if (match) visible++;
+    });
+    empty.hidden = state.tiles.length > 0;
+    noresult.hidden = !(state.tiles.length > 0 && visible === 0);
+    board.hidden = visible === 0;
+  }
+
   function render(){
     board.textContent = "";
-    tiles.forEach(function(tile){ board.appendChild(makeChit(tile)); });
-    empty.hidden = tiles.length > 0;
+    state.tiles.forEach(function(tile){ board.appendChild(makeChit(tile)); });
+    applyFilter();
+    updateStatus();
   }
+
+  search.addEventListener("input", function(){
+    query = fold(search.value);
+    applyFilter();
+  });
+  search.addEventListener("keydown", function(e){
+    if (e.key === "Escape") { search.value = ""; query = ""; applyFilter(); }
+  });
 
   /* ---------- barre d'outils ---------- */
 
@@ -540,21 +906,24 @@
     picker.value = "";
   });
 
+  publishBtn.addEventListener("click", function(){ push(); });
+  pullBtn.addEventListener("click", function(){ pull(true); });
+
   document.getElementById("zero").addEventListener("click", function(){
-    if (!tiles.length) return;
+    if (!state.tiles.length) return;
     if (!confirm("Remettre tous les compteurs à zéro ? Les images restent en place.")) return;
-    tiles.forEach(function(t){ t.counts = t.counts.map(function(){ return 0; }); });
+    state.tiles.forEach(function(t){ t.counts = t.counts.map(function(){ return 0; }); });
     save();
     render();
   });
 
   document.getElementById("export").addEventListener("click", function(){
-    if (!tiles.length) { alert("Le plateau est vide, il n'y a rien à exporter."); return; }
-    var blob = new Blob([JSON.stringify(tiles)], { type: "application/json" });
+    if (!state.tiles.length) { alert("Le plateau est vide, il n'y a rien à exporter."); return; }
+    var blob = new Blob([JSON.stringify({ version: 2, savedAt: state.savedAt, tiles: state.tiles })], { type: "application/json" });
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
     a.href = url;
-    a.download = "plateau.json";
+    a.download = FILE;
     a.click();
     setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
   });
@@ -566,19 +935,46 @@
     if (!file) return;
     var reader = new FileReader();
     reader.onload = function(){
-      var data;
-      try { data = JSON.parse(reader.result); } catch (e) { data = null; }
-      var loaded = Array.isArray(data) ? data.map(normalize).filter(Boolean) : [];
-      if (!loaded.length) {
+      var loaded = null;
+      try { loaded = readBoard(reader.result); } catch (e) { loaded = null; }
+      if (!loaded || !loaded.tiles.length) {
         alert("Ce fichier n'est pas un plateau exporté depuis cette page.");
         return;
       }
-      if (tiles.length && !confirm("Remplacer le plateau actuel par celui du fichier ?")) return;
-      tiles = loaded;
+      if (state.tiles.length && !confirm("Remplacer le plateau actuel par celui du fichier ?")) return;
+      state.tiles = loaded.tiles;
       save();
       render();
     };
     reader.readAsText(file);
+  });
+
+  /* ---------- réglages ---------- */
+
+  statusBtn.addEventListener("click", function(){
+    document.getElementById("cfgOwner").value = cfg.owner;
+    document.getElementById("cfgRepo").value = cfg.repo;
+    document.getElementById("cfgBranch").value = cfg.branch;
+    document.getElementById("cfgToken").value = cfg.token;
+    settings.showModal();
+  });
+  document.getElementById("cfgCancel").addEventListener("click", function(){ settings.close(); });
+  document.getElementById("cfgForget").addEventListener("click", function(){
+    cfg.token = "";
+    saveCfg();
+    settings.close();
+    updateStatus();
+  });
+  document.getElementById("cfgSave").addEventListener("click", function(){
+    cfg.owner = document.getElementById("cfgOwner").value.trim();
+    cfg.repo = document.getElementById("cfgRepo").value.trim();
+    cfg.branch = document.getElementById("cfgBranch").value.trim() || "main";
+    cfg.token = document.getElementById("cfgToken").value.trim();
+    saveCfg();
+    settings.close();
+    problem = "";
+    updateStatus();
+    pull(false);
   });
 
   /* ---------- glisser-déposer ---------- */
@@ -601,7 +997,13 @@
     if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
   });
 
+  /* Au démarrage, et à chaque retour sur l'onglet si rien n'attend d'être publié. */
+  document.addEventListener("visibilitychange", function(){
+    if (!document.hidden && state.savedAt <= publishedAt) pull(false);
+  });
+
   render();
+  pull(false);
 })();
 </script>
 </body>
