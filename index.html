@@ -84,7 +84,7 @@
     border:1px solid rgba(233,227,212,.28);
     border-radius:2px;
     padding:8px 11px;
-    width:190px;
+    width:180px;
     max-width:100%;
     min-width:0;
   }
@@ -117,21 +117,65 @@
   @keyframes pulse{50%{opacity:.25}}
   @media (prefers-reduced-motion:reduce){.sync.is-busy .dot{animation:none}}
 
-  /* ---------- plateau ---------- */
-  .board{
-    flex:1;
+  /* ---------- plateau et sections ---------- */
+  .board{flex:1;padding:22px;display:flex;flex-direction:column;gap:30px}
+  .board[hidden]{display:none}
+
+  .group[hidden]{display:none}
+
+  .grouphead{display:flex;align-items:center;gap:12px;margin-bottom:13px}
+
+  .groupname{
+    font-family:inherit;
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    color:var(--brass);
+    background:transparent;
+    border:0;
+    border-bottom:1px solid transparent;
+    padding:2px 0;
+    min-width:3ch;
+  }
+  .groupname:hover{border-bottom-color:rgba(214,169,59,.45)}
+  .groupname:focus{outline:none;border-bottom-color:var(--brass)}
+  .groupname[readonly]{color:var(--ink-soft);cursor:default}
+  .groupname[readonly]:hover{border-bottom-color:transparent}
+
+  .rule{flex:1;height:1px;background:rgba(233,227,212,.18)}
+
+  .groupcount{
+    font-family:var(--mono);
+    font-size:12px;
+    font-variant-numeric:tabular-nums;
+    color:var(--ink-soft);
+  }
+
+  .groupdel{
+    font-size:14px;
+    line-height:1;
+    color:var(--ink-soft);
+    background:transparent;
+    border:0;
+    padding:4px 6px;
+    cursor:pointer;
+    opacity:0;
+  }
+  .grouphead:hover .groupdel,.grouphead:focus-within .groupdel{opacity:1}
+  .groupdel:hover{color:var(--danger)}
+
+  .grid{
     display:grid;
     grid-template-columns:repeat(auto-fill,minmax(176px,1fr));
     gap:16px;
     align-content:start;
-    padding:22px;
   }
-  .board:empty,.board[hidden]{display:none}
 
+  /* ---------- une image et ses compteurs ---------- */
   .chit[hidden]{display:none}
 
   .chit{
-    position:relative;
     background:var(--chit);
     border:1px solid var(--chit-edge);
     border-radius:3px;
@@ -140,7 +184,29 @@
     flex-direction:column;
   }
 
+  .pick{
+    font-family:inherit;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    text-align:center;
+    text-align-last:center;
+    color:var(--ink-soft);
+    background:var(--chit-art);
+    border:0;
+    border-bottom:1px solid var(--chit-edge);
+    padding:6px 4px;
+    width:100%;
+    cursor:pointer;
+    -webkit-appearance:none;
+    appearance:none;
+  }
+  .pick:hover{color:var(--ink);background:#ECE6D8}
+  .pick:focus{outline:none;color:var(--ink);box-shadow:inset 0 -2px 0 var(--brass)}
+
   .art{
+    position:relative;
     aspect-ratio:1/1;
     background:var(--chit-art);
     display:grid;
@@ -175,7 +241,6 @@
   .label:hover{border-bottom-color:var(--ink-soft)}
   .label:focus{border-bottom:1px solid var(--brass);outline:none}
 
-  /* ---------- les deux pistes de comptage ---------- */
   .tracks{margin-top:auto;background:var(--ink)}
 
   .track{
@@ -250,6 +315,10 @@
   }
   .chit:hover .remove,.chit:focus-within .remove{opacity:1}
   .remove:hover{color:#fff;background:var(--danger);border-color:var(--danger)}
+  @media (hover:none){
+    .remove{opacity:1}
+    .groupdel{opacity:1}
+  }
 
   /* ---------- écrans vides ---------- */
   .empty{
@@ -317,7 +386,6 @@
     text-transform:uppercase;
   }
   dialog p{margin:0 0 18px;font-size:12.5px;line-height:1.65;color:var(--ink-soft)}
-  dialog p a{color:var(--brass)}
   .field{display:block;margin-bottom:13px}
   .field span{
     display:block;
@@ -341,9 +409,11 @@
   .field input:focus{outline:none;border-color:var(--brass)}
   .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
   .row .grow{margin-right:auto}
+  .sep{border:0;border-top:1px solid rgba(233,227,212,.16);margin:22px 0 18px}
 
   @media (max-width:520px){
-    .board{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:14px}
+    .board{padding:14px;gap:24px}
+    .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
     .track{grid-template-columns:40px 1fr 40px}
     .count{font-size:24px}
     .search{width:100%}
@@ -357,12 +427,11 @@
   <div class="tools">
     <input type="search" class="search" id="search" placeholder="Filtrer par titre" aria-label="Filtrer les images par titre">
     <button class="btn btn-primary" id="add">Ajouter des images</button>
+    <button class="btn" id="newCat">Nouvelle catégorie</button>
     <button class="btn" id="publish">Publier</button>
     <button class="btn" id="pull">Récupérer</button>
     <button class="sync" id="status" type="button"><span class="dot"></span><span id="statusText">Synchro</span></button>
     <button class="btn btn-quiet" id="zero">Remettre à zéro</button>
-    <button class="btn btn-quiet" id="export">Exporter</button>
-    <button class="btn btn-quiet" id="import">Importer</button>
   </div>
 </header>
 
@@ -377,23 +446,29 @@
 </section>
 
 <footer class="hint">
-  Clique sur le titre sous une image pour le renommer · Clique sur un nombre pour le saisir directement, ou utilise <code>&uarr;</code> <code>&darr;</code> · Maintiens <code>Maj</code> en cliquant sur <code>&minus;</code> ou <code>+</code> pour avancer de 5.
+  Le bandeau en haut d'une image la déplace d'une catégorie à l'autre · Clique sur un titre de section ou d'image pour le renommer · Clique sur un nombre pour le saisir, ou utilise <code>&uarr;</code> <code>&darr;</code> · Maintiens <code>Maj</code> sur <code>&minus;</code> ou <code>+</code> pour avancer de 5.
 </footer>
 
 <div class="veil" id="veil" hidden>Dépose les images</div>
 
 <dialog id="settings">
   <h2>Synchronisation</h2>
-  <p>Le plateau est publié dans un fichier <code>plateau.json</code> de ton dépôt GitHub. La lecture est libre&nbsp;; publier demande un jeton d'accès, à créer dans <em>Settings &rsaquo; Developer settings &rsaquo; Personal access tokens &rsaquo; Fine-grained</em>, limité à ce seul dépôt, avec la permission <em>Contents&nbsp;: Read and write</em>.</p>
+  <p>Le plateau est publié dans un fichier <code>plateau.json</code> de ton dépôt GitHub. Le jeton reste sur cet appareil et n'est jamais écrit dans le fichier publié.</p>
   <label class="field"><span>Propriétaire</span><input id="cfgOwner" placeholder="jungill" autocomplete="off" spellcheck="false"></label>
-  <label class="field"><span>Dépôt</span><input id="cfgRepo" placeholder="compteurs-plateau" autocomplete="off" spellcheck="false"></label>
+  <label class="field"><span>Dépôt</span><input id="cfgRepo" placeholder="compteurs-livres" autocomplete="off" spellcheck="false"></label>
   <label class="field"><span>Branche</span><input id="cfgBranch" placeholder="main" autocomplete="off" spellcheck="false"></label>
   <label class="field"><span>Jeton d'accès</span><input id="cfgToken" type="password" placeholder="github_pat_…" autocomplete="off" spellcheck="false"></label>
-  <p>Le jeton reste sur cet appareil et n'est jamais écrit dans le fichier publié. À saisir une fois par appareil.</p>
   <div class="row">
     <button class="btn btn-quiet grow" id="cfgForget">Oublier le jeton</button>
     <button class="btn" id="cfgCancel">Annuler</button>
     <button class="btn btn-primary" id="cfgSave">Enregistrer</button>
+  </div>
+  <hr class="sep">
+  <h2>Fichier</h2>
+  <p>Sauvegarde manuelle, indépendante du dépôt : utile pour archiver un plateau ou le transmettre à quelqu'un.</p>
+  <div class="row">
+    <button class="btn grow" id="export">Exporter</button>
+    <button class="btn" id="import">Importer</button>
   </div>
 </dialog>
 
@@ -415,6 +490,7 @@
   var CFG_KEY = "compteurs-sync-v1";
   var FILE = "plateau.json";
   var MAX_SIDE = 320;          // les images sont réduites : plateau léger et fichier compact
+  var LOOSE = "Sans catégorie";
 
   var board = document.getElementById("board");
   var empty = document.getElementById("empty");
@@ -451,8 +527,8 @@
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
 
-  /* Remet une tuile au format attendu, y compris les plateaux
-     enregistrés quand il n'y avait qu'un seul compteur. */
+  /* Remet une tuile au format attendu, y compris les plateaux enregistrés
+     avant l'arrivée du second compteur ou des catégories. */
   function normalize(t){
     if (!t || !t.src) return null;
     var counts = Array.isArray(t.counts) ? t.counts : [parseInt(t.count, 10) || 0];
@@ -460,22 +536,31 @@
       id: t.id || uid(),
       src: t.src,
       label: typeof t.label === "string" ? t.label : "",
+      cat: typeof t.cat === "string" ? t.cat : "",
       counts: TRACKS.map(function(_, i){ return parseInt(counts[i], 10) || 0; })
     };
   }
 
-  /* Accepte aussi bien l'ancien format (tableau nu) que le nouveau. */
+  /* Accepte le tableau nu des toutes premières versions comme le format actuel. */
   function readBoard(raw){
     var data = typeof raw === "string" ? JSON.parse(raw) : raw;
     var list = Array.isArray(data) ? data : (data && data.tiles);
     if (!Array.isArray(list)) return null;
-    return {
-      savedAt: (data && data.savedAt) || 0,
-      tiles: list.map(normalize).filter(Boolean)
-    };
+
+    var cats = (data && Array.isArray(data.categories) ? data.categories : [])
+      .filter(function(c){ return c && c.id; })
+      .map(function(c){ return { id: c.id, name: String(c.name || "Sans nom") }; });
+
+    var known = {};
+    cats.forEach(function(c){ known[c.id] = true; });
+
+    var tiles = list.map(normalize).filter(Boolean);
+    tiles.forEach(function(t){ if (t.cat && !known[t.cat]) t.cat = ""; });
+
+    return { savedAt: (data && data.savedAt) || 0, categories: cats, tiles: tiles };
   }
 
-  var state = { savedAt: 0, tiles: [] };
+  var state = { savedAt: 0, categories: [], tiles: [] };
   var publishedAt = 0;
 
   try {
@@ -487,19 +572,21 @@
     }
   } catch (e) { /* premier lancement */ }
 
+  function snapshot(){
+    return { version: 3, savedAt: state.savedAt, categories: state.categories, tiles: state.tiles };
+  }
+
   function persist(){
     try {
-      store.set(JSON.stringify({
-        savedAt: state.savedAt,
-        publishedAt: publishedAt,
-        tiles: state.tiles
-      }));
+      var blob = snapshot();
+      blob.publishedAt = publishedAt;
+      store.set(JSON.stringify(blob));
     } catch (e) {
-      alert("La sauvegarde locale a atteint sa limite. Publie le plateau ou utilise « Exporter » pour ne rien perdre.");
+      alert("La sauvegarde locale a atteint sa limite. Publie le plateau ou exporte-le pour ne rien perdre.");
     }
   }
 
-  /* Toute modification datée : c'est ce qui départage les appareils. */
+  /* Toute modification est datée : c'est ce qui départage les appareils. */
   function save(){
     state.savedAt = Date.now();
     persist();
@@ -642,10 +729,10 @@
   }
 
   function push(){
-    if (!canWrite()) { settings.showModal(); return; }
+    if (!canWrite()) { openSettings(); return; }
     busy = true; problem = ""; updateStatus();
 
-    var payload = JSON.stringify({ version: 2, savedAt: state.savedAt, tiles: state.tiles });
+    var payload = JSON.stringify(snapshot());
     if (payload.length > 900000) {
       busy = false; updateStatus();
       alert("Le plateau dépasse 900 Ko et deviendrait lourd à publier. Retire quelques images avant de recommencer.");
@@ -659,11 +746,7 @@
           return null;
         }
       }
-      var body = {
-        message: "Plateau mis à jour",
-        content: toBase64(payload),
-        branch: cfg.branch
-      };
+      var body = { message: "Plateau mis à jour", content: toBase64(payload), branch: cfg.branch };
       if (remote && remote.sha) body.sha = remote.sha;
 
       return fetch(apiUrl(), {
@@ -742,7 +825,7 @@
     });
   }
 
-  /* ---------- rendu ---------- */
+  /* ---------- rendu d'une image ---------- */
 
   function bump(input){
     input.classList.remove("bump");
@@ -821,6 +904,27 @@
     chit.className = "chit";
     chit.tile = tile;
 
+    /* Le bandeau de tête sert à déplacer l'image d'une catégorie à l'autre. */
+    var pick = document.createElement("select");
+    pick.className = "pick";
+    pick.setAttribute("aria-label", "Catégorie de cet élément");
+    var none = document.createElement("option");
+    none.value = "";
+    none.textContent = LOOSE;
+    pick.appendChild(none);
+    state.categories.forEach(function(c){
+      var opt = document.createElement("option");
+      opt.value = c.id;
+      opt.textContent = c.name;
+      pick.appendChild(opt);
+    });
+    pick.value = tile.cat || "";
+    pick.addEventListener("change", function(){
+      tile.cat = pick.value;
+      save();
+      render();
+    });
+
     var art = document.createElement("div");
     art.className = "art";
     var img = document.createElement("img");
@@ -828,6 +932,19 @@
     img.alt = tile.label || "";
     img.draggable = false;
     art.appendChild(img);
+
+    var remove = document.createElement("button");
+    remove.className = "remove";
+    remove.type = "button";
+    remove.textContent = "\u00D7";
+    remove.setAttribute("aria-label", "Retirer " + (tile.label || "cet élément") + " du plateau");
+    remove.addEventListener("click", function(){
+      if (!confirm("Retirer « " + (tile.label || "cet élément") + " » du plateau ?")) return;
+      state.tiles = state.tiles.filter(function(t){ return t.id !== tile.id; });
+      save();
+      render();
+    });
+    art.appendChild(remove);
 
     var label = document.createElement("input");
     label.className = "label";
@@ -845,23 +962,82 @@
     tracks.className = "tracks";
     TRACKS.forEach(function(_, i){ tracks.appendChild(makeTrack(tile, i)); });
 
-    var remove = document.createElement("button");
-    remove.className = "remove";
-    remove.type = "button";
-    remove.textContent = "\u00D7";
-    remove.setAttribute("aria-label", "Retirer " + (tile.label || "cet élément") + " du plateau");
-    remove.addEventListener("click", function(){
-      if (!confirm("Retirer « " + (tile.label || "cet élément") + " » du plateau ?")) return;
-      state.tiles = state.tiles.filter(function(t){ return t.id !== tile.id; });
-      save();
-      render();
-    });
-
-    chit.appendChild(remove);
+    chit.appendChild(pick);
     chit.appendChild(art);
     chit.appendChild(label);
     chit.appendChild(tracks);
     return chit;
+  }
+
+  /* ---------- rendu d'une catégorie ---------- */
+
+  function makeGroup(category, tiles){
+    var group = document.createElement("section");
+    group.className = "group";
+
+    var grid = document.createElement("div");
+    grid.className = "grid";
+    tiles.forEach(function(t){ grid.appendChild(makeChit(t)); });
+
+    // Sans aucune catégorie définie, le plateau reste une simple grille.
+    if (!category && !state.categories.length) {
+      group.appendChild(grid);
+      group.grid = grid;
+      return group;
+    }
+
+    var head = document.createElement("div");
+    head.className = "grouphead";
+
+    var name = document.createElement("input");
+    name.className = "groupname";
+    name.value = category ? category.name : LOOSE;
+    name.size = Math.max(4, name.value.length);
+    if (category) {
+      name.maxLength = 28;
+      name.setAttribute("aria-label", "Nom de la catégorie");
+      name.addEventListener("input", function(){
+        category.name = name.value;
+        name.size = Math.max(4, name.value.length);
+        save();
+      });
+    } else {
+      name.readOnly = true;
+      name.tabIndex = -1;
+    }
+
+    var rule = document.createElement("div");
+    rule.className = "rule";
+
+    var count = document.createElement("span");
+    count.className = "groupcount";
+    count.textContent = tiles.length;
+
+    head.appendChild(name);
+    head.appendChild(rule);
+    head.appendChild(count);
+
+    if (category) {
+      var del = document.createElement("button");
+      del.className = "groupdel";
+      del.type = "button";
+      del.textContent = "\u00D7";
+      del.setAttribute("aria-label", "Supprimer la catégorie " + category.name);
+      del.addEventListener("click", function(){
+        if (!confirm("Supprimer la catégorie « " + category.name + " » ? Les images qu'elle contient repassent dans « " + LOOSE + " ».")) return;
+        state.categories = state.categories.filter(function(c){ return c.id !== category.id; });
+        state.tiles.forEach(function(t){ if (t.cat === category.id) t.cat = ""; });
+        save();
+        render();
+      });
+      head.appendChild(del);
+    }
+
+    group.appendChild(head);
+    group.appendChild(grid);
+    group.grid = grid;
+    group.countEl = count;
+    return group;
   }
 
   /* Comparaison insensible à la casse et aux accents : « oratoire » trouve « Oratoire ». */
@@ -873,19 +1049,40 @@
 
   function applyFilter(){
     var visible = 0;
-    Array.prototype.forEach.call(board.children, function(chit){
-      var match = !query || fold(chit.tile.label).indexOf(query) !== -1;
-      chit.hidden = !match;
-      if (match) visible++;
+    Array.prototype.forEach.call(board.children, function(group){
+      var shown = 0;
+      Array.prototype.forEach.call(group.grid.children, function(chit){
+        var match = !query || fold(chit.tile.label).indexOf(query) !== -1;
+        chit.hidden = !match;
+        if (match) shown++;
+      });
+      if (group.countEl) group.countEl.textContent = shown;
+      // Une catégorie vide reste visible hors recherche : on peut y déposer des images.
+      group.hidden = query ? shown === 0 : false;
+      visible += shown;
     });
-    empty.hidden = state.tiles.length > 0;
+    empty.hidden = state.tiles.length > 0 || state.categories.length > 0;
     noresult.hidden = !(state.tiles.length > 0 && visible === 0);
-    board.hidden = visible === 0;
+    board.hidden = !board.children.length || visible === 0;
   }
 
   function render(){
     board.textContent = "";
-    state.tiles.forEach(function(tile){ board.appendChild(makeChit(tile)); });
+
+    var buckets = {};
+    state.categories.forEach(function(c){ buckets[c.id] = []; });
+    var loose = [];
+    state.tiles.forEach(function(t){
+      if (t.cat && buckets[t.cat]) buckets[t.cat].push(t); else loose.push(t);
+    });
+
+    state.categories.forEach(function(c){
+      board.appendChild(makeGroup(c, buckets[c.id]));
+    });
+    if (loose.length || !state.categories.length) {
+      board.appendChild(makeGroup(null, loose));
+    }
+
     applyFilter();
     updateStatus();
   }
@@ -906,6 +1103,16 @@
     picker.value = "";
   });
 
+  document.getElementById("newCat").addEventListener("click", function(){
+    var name = prompt("Nom de la nouvelle catégorie ?");
+    if (name === null) return;
+    name = name.trim().slice(0, 28);
+    if (!name) return;
+    state.categories.push({ id: uid(), name: name });
+    save();
+    render();
+  });
+
   publishBtn.addEventListener("click", function(){ push(); });
   pullBtn.addEventListener("click", function(){ pull(true); });
 
@@ -919,7 +1126,7 @@
 
   document.getElementById("export").addEventListener("click", function(){
     if (!state.tiles.length) { alert("Le plateau est vide, il n'y a rien à exporter."); return; }
-    var blob = new Blob([JSON.stringify({ version: 2, savedAt: state.savedAt, tiles: state.tiles })], { type: "application/json" });
+    var blob = new Blob([JSON.stringify(snapshot())], { type: "application/json" });
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
     a.href = url;
@@ -942,7 +1149,9 @@
         return;
       }
       if (state.tiles.length && !confirm("Remplacer le plateau actuel par celui du fichier ?")) return;
+      state.categories = loaded.categories;
       state.tiles = loaded.tiles;
+      settings.close();
       save();
       render();
     };
@@ -951,13 +1160,15 @@
 
   /* ---------- réglages ---------- */
 
-  statusBtn.addEventListener("click", function(){
+  function openSettings(){
     document.getElementById("cfgOwner").value = cfg.owner;
     document.getElementById("cfgRepo").value = cfg.repo;
     document.getElementById("cfgBranch").value = cfg.branch;
     document.getElementById("cfgToken").value = cfg.token;
     settings.showModal();
-  });
+  }
+
+  statusBtn.addEventListener("click", openSettings);
   document.getElementById("cfgCancel").addEventListener("click", function(){ settings.close(); });
   document.getElementById("cfgForget").addEventListener("click", function(){
     cfg.token = "";
