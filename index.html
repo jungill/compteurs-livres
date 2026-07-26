@@ -18,6 +18,10 @@
     --danger:#B04A34;
     --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     --mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
+    /* Typographie des titres de catégorie : partagée entre le champ et le
+       gabarit invisible qui mesure sa largeur. Les deux doivent rester identiques. */
+    --cat-type:700 13px/1.3 var(--font);
+    --cat-track:.2em;
   }
 
   *{box-sizing:border-box}
@@ -126,17 +130,29 @@
   .grouphead{display:flex;align-items:center;gap:12px;margin-bottom:13px}
 
   .groupname{
-    font-family:inherit;
-    font-size:13px;
-    font-weight:700;
-    letter-spacing:.2em;
+    font:var(--cat-type);
+    letter-spacing:var(--cat-track);
     text-transform:uppercase;
+    text-overflow:ellipsis;
     color:var(--brass);
     background:transparent;
     border:0;
     border-bottom:1px solid transparent;
     padding:2px 0;
     min-width:3ch;
+    max-width:100%;
+  }
+
+  /* Hors écran : sert uniquement à mesurer la largeur réelle d'un titre. */
+  .ruler{
+    position:absolute;
+    top:0;
+    left:-9999px;
+    visibility:hidden;
+    white-space:pre;
+    font:var(--cat-type);
+    letter-spacing:var(--cat-track);
+    text-transform:uppercase;
   }
   .groupname:hover{border-bottom-color:rgba(214,169,59,.45)}
   .groupname:focus{outline:none;border-bottom-color:var(--brass)}
@@ -412,6 +428,7 @@
   .sep{border:0;border-top:1px solid rgba(233,227,212,.16);margin:22px 0 18px}
 
   @media (max-width:520px){
+    :root{--cat-type:700 12px/1.3 var(--font);--cat-track:.11em}
     .board{padding:14px;gap:24px}
     .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
     .track{grid-template-columns:40px 1fr 40px}
@@ -971,6 +988,17 @@
 
   /* ---------- rendu d'une catégorie ---------- */
 
+  /* La largeur d'un champ texte ne suit pas le nombre de caractères dès qu'il y a
+     de l'interlettrage : on mesure le texte rendu dans un gabarit hors écran. */
+  var ruler = document.createElement("span");
+  ruler.className = "ruler";
+  document.body.appendChild(ruler);
+
+  function sizeName(input){
+    ruler.textContent = input.value || input.placeholder || "";
+    input.style.width = (Math.ceil(ruler.offsetWidth) + 4) + "px";
+  }
+
   function makeGroup(category, tiles){
     var group = document.createElement("section");
     group.className = "group";
@@ -992,13 +1020,13 @@
     var name = document.createElement("input");
     name.className = "groupname";
     name.value = category ? category.name : LOOSE;
-    name.size = Math.max(4, name.value.length);
+    sizeName(name);
     if (category) {
-      name.maxLength = 28;
+      name.maxLength = 40;
       name.setAttribute("aria-label", "Nom de la catégorie");
       name.addEventListener("input", function(){
         category.name = name.value;
-        name.size = Math.max(4, name.value.length);
+        sizeName(name);
         save();
       });
     } else {
@@ -1106,7 +1134,7 @@
   document.getElementById("newCat").addEventListener("click", function(){
     var name = prompt("Nom de la nouvelle catégorie ?");
     if (name === null) return;
-    name = name.trim().slice(0, 28);
+    name = name.trim().slice(0, 40);
     if (!name) return;
     state.categories.push({ id: uid(), name: name });
     save();
