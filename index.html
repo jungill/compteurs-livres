@@ -584,7 +584,13 @@
 
   /* Accepte le tableau nu des toutes premières versions comme le format actuel. */
   function readBoard(raw){
-    var data = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (typeof raw === "string" && !raw.trim()) return null;   // fichier vide
+    var data;
+    try {
+      data = typeof raw === "string" ? JSON.parse(raw) : raw;
+    } catch (e) {
+      throw new Error("Fichier du dépôt illisible");
+    }
     var list = Array.isArray(data) ? data : (data && data.tiles);
     if (!Array.isArray(list)) return null;
 
@@ -719,14 +725,26 @@
   /* Renvoie { board, sha } ou null si rien n'est encore publié. */
   function fetchRemote(){
     if (cfg.token) {
-      return fetch(apiUrl() + "?ref=" + encodeURIComponent(cfg.branch), {
-        headers: headers(), cache: "no-store"
-      }).then(function(r){
+      var url = apiUrl() + "?ref=" + encodeURIComponent(cfg.branch);
+      return fetch(url, { headers: headers(), cache: "no-store" }).then(function(r){
         if (r.status === 404) return null;
         if (r.status === 401 || r.status === 403) throw new Error("Jeton refusé");
         if (!r.ok) throw new Error("GitHub " + r.status);
-        return r.json().then(function(j){
-          return { board: readBoard(fromBase64(j.content)), sha: j.sha };
+        return r.json();
+      }).then(function(meta){
+        if (!meta) return null;
+        // Au-delà d'un mégaoctet, l'API ne joint plus le contenu à sa réponse
+        // (encoding vaut "none") : il faut le redemander en brut.
+        if (meta.encoding === "base64" && meta.content) {
+          return { board: readBoard(fromBase64(meta.content)), sha: meta.sha };
+        }
+        var raw = headers();
+        raw["Accept"] = "application/vnd.github.raw";
+        return fetch(url, { headers: raw, cache: "no-store" }).then(function(r2){
+          if (!r2.ok) throw new Error("GitHub " + r2.status);
+          return r2.text().then(function(text){
+            return { board: readBoard(text), sha: meta.sha };
+          });
         });
       });
     }
