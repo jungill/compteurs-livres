@@ -482,9 +482,10 @@
   </div>
   <hr class="sep">
   <h2>Fichier</h2>
-  <p>Sauvegarde manuelle, indépendante du dépôt : utile pour archiver un plateau ou le transmettre à quelqu'un.</p>
+  <p id="sizeInfo">Sauvegarde manuelle, indépendante du dépôt&nbsp;: utile pour archiver un plateau ou le transmettre à quelqu'un.</p>
   <div class="row">
-    <button class="btn grow" id="export">Exporter</button>
+    <button class="btn grow" id="squeeze">Alléger les images</button>
+    <button class="btn" id="export">Exporter</button>
     <button class="btn" id="import">Importer</button>
   </div>
 </dialog>
@@ -507,6 +508,9 @@
   var CFG_KEY = "compteurs-sync-v1";
   var FILE = "plateau.json";
   var MAX_SIDE = 320;          // les images sont réduites : plateau léger et fichier compact
+  var MAX_IMAGE = 56000;       // caractères par image, soit environ 42 Ko
+  var SOFT_LIMIT = 1500000;    // au-delà, on prévient : l'historique du dépôt grossit vite
+  var HARD_LIMIT = 3500000;    // au-delà, la sauvegarde du navigateur lâche
   var LOOSE = "Sans catégorie";
 
   var board = document.getElementById("board");
@@ -635,6 +639,7 @@
 
   var busy = false;
   var problem = "";
+  var warnedSize = false;
 
   function updateStatus(){
     var dirty = state.savedAt > publishedAt;
@@ -750,10 +755,17 @@
     busy = true; problem = ""; updateStatus();
 
     var payload = JSON.stringify(snapshot());
-    if (payload.length > 900000) {
+    if (payload.length > HARD_LIMIT) {
       busy = false; updateStatus();
-      alert("Le plateau dépasse 900 Ko et deviendrait lourd à publier. Retire quelques images avant de recommencer.");
+      alert("Le plateau pèse " + fmtSize(payload.length) + ", au-delà de ce que le navigateur peut garder en mémoire locale. Ouvre la fenêtre de synchronisation et lance « Alléger les images ».");
       return;
+    }
+    if (payload.length > SOFT_LIMIT && !warnedSize) {
+      warnedSize = true;
+      if (!confirm("Le plateau pèse " + fmtSize(payload.length) + ". La publication va fonctionner, mais chaque envoi ajoute ce poids à l'historique du dépôt. « Alléger les images » peut réduire ça nettement. Publier quand même ?")) {
+        busy = false; updateStatus();
+        return;
+      }
     }
 
     fetchRemote().then(function(remote){
@@ -787,32 +799,85 @@
 
   /* ---------- import des images ---------- */
 
+  function fmtSize(chars){
+    return chars > 1048576 ? (chars / 1048576).toFixed(1) + " Mo" : Math.round(chars / 1024) + " Ko";
+  }
+
+  function loadImage(src){
+    return new Promise(function(resolve, reject){
+      var img = new Image();
+      img.onload = function(){ resolve(img); };
+      img.onerror = function(){ reject(new Error("décodage")); };
+      img.src = src;
+    });
+  }
+
+  /* Réduit puis encode. Le format n'est pas déduit de l'extension d'origine mais du
+     contenu : beaucoup de PNG sont entièrement opaques et pèsent alors bien moins
+     lourd en JPEG. La qualité descend par paliers jusqu'à tenir dans MAX_IMAGE. */
+  function encodeImage(img){
+    var ratio = Math.min(1, MAX_SIDE / Math.max(img.width, img.height));
+    var w = Math.max(1, Math.round(img.width * ratio));
+    var h = Math.max(1, Math.round(img.height * ratio));
+    var canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    var ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, w, h);
+
+    var transparent = false;
+    try {
+      var data = ctx.getImageData(0, 0, w, h).data;
+      for (var i = 3; i < data.length; i += 4) {
+        if (data[i] < 250) { transparent = true; break; }
+      }
+    } catch (e) { transparent = true; }   // dans le doute, on préserve la transparence
+
+    var type = transparent ? "image/webp" : "image/jpeg";
+    var quality = 0.82;
+    var out = canvas.toDataURL(type, quality);
+    if (transparent && out.indexOf("data:image/webp") !== 0) {
+      return canvas.toDataURL("image/png");   // repli si WebP n'est pas encodé
+    }
+    while (out.length > MAX_IMAGE && quality > 0.45) {
+      quality -= 0.12;
+      out = canvas.toDataURL(type, quality);
+    }
+    return out;
+  }
+
   function shrink(file){
     return new Promise(function(resolve, reject){
       var reader = new FileReader();
       reader.onerror = function(){ reject(new Error("lecture")); };
-      reader.onload = function(){
-        var img = new Image();
-        img.onerror = function(){ reject(new Error("décodage")); };
-        img.onload = function(){
-          var ratio = Math.min(1, MAX_SIDE / Math.max(img.width, img.height));
-          var w = Math.max(1, Math.round(img.width * ratio));
-          var h = Math.max(1, Math.round(img.height * ratio));
-          var canvas = document.createElement("canvas");
-          canvas.width = w; canvas.height = h;
-          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-          // WebP conserve la transparence des icônes ; JPEG suffit pour les photos.
-          var keepAlpha = /png|webp|gif|svg/.test(file.type);
-          var out = canvas.toDataURL(keepAlpha ? "image/webp" : "image/jpeg", 0.85);
-          if (keepAlpha && out.indexOf("data:image/webp") !== 0) {
-            out = canvas.toDataURL("image/png");   // repli si WebP n'est pas encodé
-          }
-          resolve(out);
-        };
-        img.src = reader.result;
-      };
+      reader.onload = function(){ resolve(reader.result); };
       reader.readAsDataURL(file);
-    });
+    }).then(loadImage).then(encodeImage);
+  }
+
+  /* Repasse tout le plateau dans l'encodeur courant, sans toucher aux compteurs. */
+  function recompressAll(){
+    if (!state.tiles.length) { alert("Le plateau est vide."); return; }
+    var before = JSON.stringify(snapshot()).length;
+    if (!confirm("Recompresser les " + state.tiles.length + " images du plateau ? Le plateau pèse " + fmtSize(before) + " et l'affichage restera identique.")) return;
+
+    settings.close();
+    var queue = state.tiles.slice();
+
+    function next(){
+      var tile = queue.shift();
+      if (!tile) {
+        var after = JSON.stringify(snapshot()).length;
+        save();
+        render();
+        alert("Terminé : " + fmtSize(before) + " → " + fmtSize(after) + ".");
+        return;
+      }
+      loadImage(tile.src).then(function(img){
+        tile.src = encodeImage(img);
+      }).catch(function(){ /* image illisible : on la laisse telle quelle */ })
+        .then(next);
+    }
+    next();
   }
 
   function cleanName(name){
@@ -1188,7 +1253,13 @@
 
   /* ---------- réglages ---------- */
 
+  document.getElementById("squeeze").addEventListener("click", recompressAll);
+
   function openSettings(){
+    var weight = JSON.stringify(snapshot()).length;
+    document.getElementById("sizeInfo").textContent =
+      "Le plateau pèse " + fmtSize(weight) + " pour " + state.tiles.length +
+      " image(s). « Alléger » les recompresse sur place ; « Exporter » en met une copie de côté.";
     document.getElementById("cfgOwner").value = cfg.owner;
     document.getElementById("cfgRepo").value = cfg.repo;
     document.getElementById("cfgBranch").value = cfg.branch;
