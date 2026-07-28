@@ -768,16 +768,30 @@
         return;
       }
       var incoming = remote.board;
-      if (incoming.savedAt > state.savedAt) {
+      var dirty = state.savedAt > publishedAt;
+
+      function adopt(){
         state = incoming;
         publishedAt = incoming.savedAt;
         persist();
         render();
+      }
+
+      if (incoming.savedAt > state.savedAt) {
+        // Une récupération automatique ne doit jamais emporter du travail en cours.
+        if (dirty && !manual) { updateStatus(); return; }
+        if (dirty && !confirm("Le dépôt contient une version plus récente que celle de cet appareil. La charger ? Les modifications non publiées d'ici seront perdues.")) {
+          updateStatus();
+          return;
+        }
+        adopt();
       } else if (incoming.savedAt === state.savedAt) {
         publishedAt = state.savedAt;
         persist();
       } else if (manual) {
-        alert("Le plateau de cet appareil est plus récent que celui du dépôt. Utilise « Publier » pour l'envoyer.");
+        if (confirm("Le plateau de cet appareil est plus récent que celui du dépôt.\n\nOK : abandonner les modifications d'ici et charger la version publiée.\nAnnuler : les garder, pour les envoyer avec « Publier ».")) {
+          adopt();
+        }
       }
       updateStatus();
     }, function(err){
