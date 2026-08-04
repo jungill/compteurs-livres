@@ -244,10 +244,10 @@
     font-family:inherit;
     font-size:12px;
     font-weight:600;
-    letter-spacing:.07em;
+    line-height:1.4;
+    letter-spacing:.05em;
     text-transform:uppercase;
     text-align:center;
-    text-overflow:ellipsis;
     color:var(--ink);
     background:transparent;
     border:0;
@@ -255,6 +255,11 @@
     padding:9px 4px 7px;
     margin:0 10px;
     width:calc(100% - 20px);
+    display:block;
+    resize:none;
+    overflow:hidden;
+    /* Au repos, le titre est tronqué à trois lignes ; il se déplie à la saisie. */
+    max-height:calc(1.4em * 3 + 16px);
   }
   .label::placeholder{
     color:var(--ink-soft);
@@ -263,7 +268,12 @@
     text-transform:none;
   }
   .label:hover{border-bottom-color:var(--ink-soft)}
-  .label:focus{border-bottom:1px solid var(--brass);outline:none}
+  .label:focus{
+    border-bottom:1px solid var(--brass);
+    outline:none;
+    max-height:none;
+    background:var(--chit-art);
+  }
 
   .tracks{margin-top:auto;background:var(--ink)}
 
@@ -1080,17 +1090,34 @@
     });
     art.appendChild(remove);
 
-    var label = document.createElement("input");
+    var label = document.createElement("textarea");
     label.className = "label";
+    label.rows = 1;
     label.value = tile.label || "";
     label.placeholder = "Sans titre";
-    label.maxLength = 24;
+    label.maxLength = 100;
     label.setAttribute("aria-label", "Titre de cet élément");
+
+    /* La hauteur suit le contenu ; le CSS la borne à trois lignes hors saisie. */
+    function fitLabel(){
+      label.style.height = "auto";
+      label.style.height = label.scrollHeight + "px";
+    }
+
     label.addEventListener("input", function(){
+      // Un titre reste sur une seule ligne logique : le retour chariot est écarté.
+      if (label.value.indexOf("\n") !== -1) {
+        label.value = label.value.replace(/\n/g, " ");
+      }
       tile.label = label.value;
       img.alt = label.value;
+      fitLabel();
       save();
     });
+    label.addEventListener("keydown", function(e){
+      if (e.key === "Enter") { e.preventDefault(); label.blur(); }
+    });
+    label.addEventListener("focus", fitLabel);
 
     var tracks = document.createElement("div");
     tracks.className = "tracks";
