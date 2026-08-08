@@ -15,6 +15,7 @@
     --ink-soft:#5F6E68;
     --brass:#D6A93B;
     --jade:#7FB8A4;
+    --copper:#D08A63;
     --danger:#B04A34;
     --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     --mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
@@ -87,6 +88,15 @@
   .btn-primary:hover{background:#E2B848;border-color:#E2B848}
   .btn-quiet{border-color:transparent;color:var(--ink-soft)}
   .btn-quiet:hover{color:var(--chit);border-color:rgba(233,227,212,.28)}
+
+  /* Filtre actif : le bouton prend la couleur de la piste qu'il isole. */
+  .btn.is-on{
+    color:var(--copper);
+    border-color:var(--copper);
+    background:rgba(208,138,99,.14);
+    font-weight:600;
+  }
+  .btn.is-on:hover{border-color:var(--copper);background:rgba(208,138,99,.22)}
 
   .search{
     font-family:inherit;
@@ -299,7 +309,7 @@
   .step:hover{background:rgba(233,227,212,.09)}
   .step:active{background:rgba(233,227,212,.17)}
 
-  .readout{display:flex;flex-direction:column;align-items:center;padding:8px 0 10px;min-width:0}
+  .readout{display:flex;flex-direction:column;align-items:center;padding:6px 0 8px;min-width:0}
 
   .tag{
     font-size:9px;
@@ -315,7 +325,7 @@
 
   .count{
     font-family:var(--mono);
-    font-size:27px;
+    font-size:25px;
     font-weight:600;
     font-variant-numeric:tabular-nums;
     letter-spacing:-.03em;
@@ -475,6 +485,7 @@
     <input type="search" class="search" id="search" placeholder="Filtrer par titre" aria-label="Filtrer les images par titre">
     <button class="btn btn-primary" id="add">Ajouter des images</button>
     <button class="btn" id="newCat">Nouvelle catégorie</button>
+    <button class="btn" id="onlyTodo" aria-pressed="false">À commander</button>
     <button class="btn" id="publish">Publier</button>
     <button class="btn" id="pull">Récupérer</button>
     <button class="sync" id="status" type="button"><span class="dot"></span><span id="statusText">Synchro</span></button>
@@ -489,7 +500,7 @@
 </section>
 
 <section class="empty" id="noresult" hidden>
-  <p><strong>Aucun titre ne correspond</strong>Essaie un autre mot, ou efface le filtre pour retrouver tout le plateau.</p>
+  <p><strong id="noresultTitle">Aucun résultat</strong><span id="noresultText">Essaie un autre mot, ou retire le filtre pour retrouver tout le plateau.</span></p>
 </section>
 
 <footer class="hint">
@@ -527,11 +538,12 @@
 (function(){
   "use strict";
 
-  /* Les deux pistes. Pour les renommer ou en ajouter une troisième,
+  /* Les pistes de comptage. Pour en renommer une, en ajouter ou en retirer une,
      il suffit de modifier cette liste : le reste du code s'adapte. */
   var TRACKS = [
-    { name: "Dubail",   color: "var(--brass)" },
-    { name: "Oratoire", color: "var(--jade)"  }
+    { name: "Dubail",      color: "var(--brass)"  },
+    { name: "Oratoire",    color: "var(--jade)"   },
+    { name: "À commander", color: "var(--copper)" }
   ];
 
   var KEY = "compteurs-plateau-v1";
@@ -546,6 +558,9 @@
   var board = document.getElementById("board");
   var empty = document.getElementById("empty");
   var noresult = document.getElementById("noresult");
+  var noresultTitle = document.getElementById("noresultTitle");
+  var noresultText = document.getElementById("noresultText");
+  var todoBtn = document.getElementById("onlyTodo");
   var search = document.getElementById("search");
   var veil = document.getElementById("veil");
   var picker = document.getElementById("picker");
@@ -1218,22 +1233,34 @@
   }
 
   var query = "";
+  var onlyTodo = false;
+
+  /* Index de la piste que le bouton isole, retrouvé par son nom :
+     réordonner TRACKS ne casse donc pas le filtre. */
+  var TODO = TRACKS.map(function(t){ return t.name; }).indexOf("À commander");
 
   function applyFilter(){
+    var filtering = !!query || onlyTodo;
     var visible = 0;
     Array.prototype.forEach.call(board.children, function(group){
       var shown = 0;
       Array.prototype.forEach.call(group.grid.children, function(chit){
-        var match = !query || fold(chit.tile.label).indexOf(query) !== -1;
+        var tile = chit.tile;
+        var match = (!query || fold(tile.label).indexOf(query) !== -1) &&
+                    (!onlyTodo || (TODO >= 0 && tile.counts[TODO] > 0));
         chit.hidden = !match;
         if (match) shown++;
       });
       if (group.countEl) group.countEl.textContent = shown;
-      // Une catégorie vide reste visible hors recherche : on peut y déposer des images.
-      group.hidden = query ? shown === 0 : false;
+      // Une catégorie vide reste visible hors filtre : on peut y déposer des images.
+      group.hidden = filtering ? shown === 0 : false;
       visible += shown;
     });
     empty.hidden = state.tiles.length > 0 || state.categories.length > 0;
+    noresultText.textContent = onlyTodo && !query
+      ? "Aucun livre n'a de quantité à commander. Décoche le filtre pour retrouver tout le plateau."
+      : "Essaie un autre mot, ou retire le filtre pour retrouver tout le plateau.";
+    noresultTitle.textContent = onlyTodo && !query ? "Rien à commander" : "Aucun résultat";
     noresult.hidden = !(state.tiles.length > 0 && visible === 0);
     board.hidden = !board.children.length || visible === 0;
   }
@@ -1258,6 +1285,14 @@
     applyFilter();
     updateStatus();
   }
+
+  todoBtn.hidden = TODO < 0;
+  todoBtn.addEventListener("click", function(){
+    onlyTodo = !onlyTodo;
+    todoBtn.classList.toggle("is-on", onlyTodo);
+    todoBtn.setAttribute("aria-pressed", onlyTodo ? "true" : "false");
+    applyFilter();
+  });
 
   search.addEventListener("input", function(){
     query = fold(search.value);
